@@ -1,0 +1,4 @@
+*.md
+.git
+ttx/rmm/*.msi
+ttx/.current-url
