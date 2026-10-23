@@ -1,0 +1,6 @@
+services:
+  ttx-lab:
+    build: .
+    container_name: ttx-lab
+    restart: unless-stopped
+    # no ports published - cloudflared is outbound-only
