@@ -104,11 +104,3 @@ the MSI is missing on the server — see "Verify the MSI is being served".)
 - Reused victims: run cleanup-victim.ps1 first (kills persistence task,
   uninstalls streamer, clears Public files) — proven to produce a
   working re-run.
-
-## Gotchas learned the hard way
-- streamer.msi is team-bound and ~68MB — supply it per-deployment, never commit
-- Victim hosts with the Splashtop Business app installed can produce wizard/
-  binding weirdness — test on hosts without it
-- /beacon returns 404 by design — query strings are logged (that's the console)
-- Prior Splashtop installs on a victim can wedge MSI; cleanup-victim.ps1
-  (or reboot the victim) clears it
