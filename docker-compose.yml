@@ -3,4 +3,6 @@ services:
     build: .
     container_name: ttx-lab
     restart: unless-stopped
+    volumes:
+      - ./ttx/rmm:/var/www/html/ttx/rmm
     # no ports published - cloudflared is outbound-only
