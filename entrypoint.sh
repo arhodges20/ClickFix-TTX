@@ -3,7 +3,7 @@ set -e
 ROOT=/var/www/html/ttx
 
 # 1. nginx (access log -> docker logs)
-nginx
+nginx &
 
 # 2. fresh quick tunnel
 pkill -f "cloudflared tunnel" 2>/dev/null || true; sleep 1
