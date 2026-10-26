@@ -3,8 +3,8 @@
 # tunnel and dot-sources it. All tool-specific knowledge (payload URL, install
 # method, process check, beacons) lives in each tool's own install.ps1.
 #
-# __RMM_TOOL__ is injected by select-rmm.sh at container start; the base URL
-# placeholders are rewritten by set-url.sh (same as stage1.ps1/index.html).
+# select-rmm.sh injects the tool id into the $Tool line at container start;
+# the base URL placeholders are rewritten by set-url.sh (same as stage1.ps1).
 
 $Tool      = '__RMM_TOOL__'
 $Base      = 'http://YOUR-HOST:8000/ttx'
@@ -18,8 +18,10 @@ function Beacon([string]$Stage) {
 }
 
 # Fallback if the tool id was never injected (shouldn't happen - select-rmm.sh
-# runs before this file is ever served)
-if ($Tool -eq '__RMM_TOOL__') { $Tool = 'splashtop' }
+# runs before this file is ever served). Deliberately matches WITHOUT the
+# surrounding underscores so select-rmm.sh's placeholder rewrite can never
+# turn this check into "if ($Tool -eq 'rustdesk')..." and flip the tool.
+if ($Tool -like '*RMM_TOOL*') { $Tool = 'splashtop' }
 
 Add-Content $Log "$(Get-Date -f s)  run: tool=$Tool (loader) user=$env:USERNAME"
 
