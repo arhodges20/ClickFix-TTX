@@ -1,0 +1,57 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261026143323
+Username: WIN-LAB1\Administrator
+RunAs User: WIN-LAB1\Administrator
+Configuration Name: 
+Machine: WIN-LAB1 (Microsoft Windows NT 10.0.20348.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Users\Administrator\Downloads\ClickFix-TTX-testing\ClickFix-TTX-testing\cleanup-scripts\cleanup-victim.ps1
+Process ID: 12916
+PSVersion: 5.1.20348.1850
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.20348.1850
+BuildVersion: 10.0.20348.1850
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+== TTX ClickFix victim cleanup ==
+
+-- core: stage1 dropper + loader
+  [absent   ] scheduled task 'WindowsVerification'
+  [absent   ] C:\Users\Public\WindowsVerification.ps1
+  [absent   ] C:\Users\Public\WindowsVerification.log
+  [absent   ] cached installer scripts (rmm-*.ps1)
+
+-- tool: rustdesk
+  [cleaned  ] rustdesk process(es) force-killed
+  [cleaned  ] service 'RustDesk' stopped + deleted
+  [absent   ] RustDesk MSI registry entry
+  [cleaned  ] C:\Program Files\RustDesk
+  [absent   ] C:\Program Files (x86)\RustDesk
+  [absent   ] C:\ProgramData\RustDesk
+  [cleaned  ] C:\Users\Administrator\AppData\Local\RustDesk
+  [cleaned  ] C:\Users\Administrator\AppData\Roaming\RustDesk
+  [cleaned  ] C:\Windows\ServiceProfiles\LocalService\AppData\Roaming\RustDesk
+  [absent   ] C:\Users\Public\AppData\Local\RustDesk
+  [absent   ] C:\Users\Public\AppData\Roaming\RustDesk
+  [absent   ] C:\Users\standard\AppData\Local\RustDesk
+  [absent   ] C:\Users\standard\AppData\Roaming\RustDesk
+  [cleaned  ] registry key: RustDesk
+  [cleaned  ] rustdesk firewall rule(s)
+  [cleaned  ] C:\Users\Public\rustdesk-host.exe
+  [cleaned  ] verified: no rustdesk process, service, install folder, registry entry, or data folders remain
+
+-- tool: splashtop
+  [absent   ] SRStream process(es)
+  [absent   ] Splashtop Streamer service(s)
+  [absent   ] Splashtop Streamer install (registry)
+  [absent   ] Splashtop Streamer install dir
+  [absent   ] C:\Users\Public\streamer.msi
+  [absent   ] C:\Users\Public\setup.msi
+  [cleaned  ] verified: no Splashtop Streamer product, process, or service remains
+**********************
+Windows PowerShell transcript end
+End time: 20261026143337
+**********************
