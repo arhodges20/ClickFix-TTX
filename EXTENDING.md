@@ -106,12 +106,3 @@ endings for shell scripts, and the two placeholder systems —
 `__RMM_TOOL__` in `rmm.ps1` (injected by `select-rmm.sh`; keep exactly
 one occurrence so the sed can't hit anything else) and
 `http://YOUR-HOST:8000` in payloads (rewritten by `set-url.sh`).
-
-## Authorized use / disclaimer
-
-This project is a training aid for cybersecurity education and tabletop
-exercises. Run it only against systems you own or are explicitly
-authorized to test, and hand the lure URL only to consenting
-participants. You are responsible for complying with the policies of any
-environment you run it in and with applicable law. The authors accept no
-liability for misuse.
