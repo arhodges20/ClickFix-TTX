@@ -3,6 +3,9 @@ services:
     build: .
     container_name: ttx-lab
     restart: unless-stopped
+    # RMM_TOOL is written by ./setup.sh into .env (default: splashtop)
+    environment:
+      - RMM_TOOL=${RMM_TOOL:-splashtop}
     volumes:
       - ./ttx/rmm:/var/www/html/ttx/rmm
     # no ports published - cloudflared is outbound-only

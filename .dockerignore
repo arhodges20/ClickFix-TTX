@@ -1,3 +1,5 @@
 *.md
 .git
+.env
 ttx/.current-url
+ttx/.active-rmm
