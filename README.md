@@ -15,80 +15,158 @@ Ships with **Splashtop Streamer** (visible install wizard) and
 - An account/download for whichever RMM tool you select
 - One victim Windows host (ideally WITHOUT that RMM agent already installed)
 
-## Setup (one-time)
+## Quick start — first-time bring-up
 
-### Step 1: Clone the repo
+Everything below runs on the Docker host, from the repo root. Do the steps
+in order and run the verify command in each before moving to the next.
+
+### Step 1 — Clone the repo and confirm Docker works
+
     git clone https://github.com/arhodges20/ClickFix-TTX.git
     cd ClickFix-TTX
+    docker compose version
 
-### Step 2: Pick your RMM tool
+If `docker compose version` errors out, install Docker (with the compose
+plugin) first and come back.
 
+### Step 2 — Place the payload binary for the tool you'll use
+
+Each tool module lives in `ttx/rmm/<tool>/` and needs its payload binary
+sitting **directly in that folder**, named **exactly** what the tool's
+manifest says (Linux is case-sensitive). Pick ONE of:
+
+**Option A — RustDesk (silent install, no wizard):**
+
+    # Download the Windows host exe straight onto the box (~25 MB):
+    wget -O ttx/rmm/rustdesk/rustdesk-host.exe \
+      https://github.com/rustdesk/rustdesk/releases/download/1.5.0/rustdesk-1.5.0-x86_64.exe
+
+(For a newer release, grab the `rustdesk-<version>-x86_64.exe` link from
+github.com/rustdesk/rustdesk/releases and use that URL instead.)
+
+**Option B — Splashtop (interactive MSI wizard):**
+
+1. On a machine with console access, download the Streamer MSI:
+   my.splashtop.com → Add/deploy remote computer → deploy by 12-digit code
+   → Streamer MSI download. It arrives as a .zip — extract it.
+2. Copy the extracted .msi onto the Docker host:
+
+       # run this from wherever the extracted .msi is:
+       scp streamer.msi <user>@<docker-host>:~/ClickFix/ClickFix-TTX/ttx/rmm/splashtop/streamer.msi
+
+**Verify (whichever you picked):**
+
+    ls -lh ttx/rmm/rustdesk/rustdesk-host.exe      # or .../splashtop/streamer.msi
+    file ttx/rmm/rustdesk/rustdesk-host.exe        # must say "PE32+ executable"
+
+If `file` says zip/HTML instead of PE32+ executable, the download failed —
+redo the step. Two classic mistakes to avoid:
+
+- the file must NOT be in a nested path like
+  `ttx/rmm/rustdesk/ttx/rmm/rustdesk/rustdesk-host.exe` (this happens when
+  a whole folder gets copied instead of just the file) — flat, one level;
+- the name must match the manifest exactly — check with
+  `grep PAYLOAD_FILE ttx/rmm/<tool>/manifest`.
+
+You CAN launch without any payload (lure page, clipboard copy, and beacons
+all work), but the victim flow will fail at the payload download step until
+one is in place.
+
+### Step 3 — Pick your RMM tool
+
+    chmod +x setup.sh
     ./setup.sh
 
-This scans `ttx/rmm/*/manifest`, shows a numbered menu, and writes your
-choice to `.env` (never committed):
+It scans `ttx/rmm/*/manifest` and shows a numbered menu; the payload status
+for each tool is checked live on every run:
 
     Which RMM tool should victims receive?
 
       1) Splashtop Streamer (MSI wizard)         [payload OK]
-      2) RustDesk Host (silent)                   [PAYLOAD MISSING]
+      2) RustDesk Host (silent)                   [payload OK]
 
     Selection (1-2): 2
 
-Each tool needs its payload binary placed once (the menu tells you if it's
-missing, and each manifest's README line says where to get it):
+If your tool still says `[PAYLOAD MISSING]`, go back and re-check Step 2 —
+the menu is a live filesystem check, so it flips to OK the moment the file
+is in the right place with the right name.
 
-- **splashtop** — my.splashtop.com → Add/deploy remote computer → deploy by
-  12-digit code → Streamer MSI download. It arrives as a .zip — extract
-  and save the .msi as `ttx/rmm/splashtop/streamer.msi`
-- **rustdesk** — github.com/rustdesk/rustdesk/releases → Windows host exe
-  (the `rustdesk-<version>-x86_64.exe` build) — save it as
-  `ttx/rmm/rustdesk/rustdesk-host.exe`
+Your choice is written to `.env` (`RMM_TOOL=...`), which docker compose
+reads automatically.
 
-The `ttx/rmm/` folder is bind-mounted into the container, so payloads are
-picked up automatically — no rebuild required. Swapping a payload for the
-same tool = replace the file and `docker compose restart`.
+### Step 4 — Launch
 
-You can launch without any payload in place (lure page, clipboard copy,
-and beacons all work — see "Partial testing" below), but the victim flow
-will fail at the payload download step until one is there.
+    docker compose up -d --build
 
-### Step 3: Launch
+First run takes a minute or two (base image + cloudflared download).
+Subsequent runs are fast. Give it ~15 seconds after the build finishes for
+the outbound Cloudflare tunnel to come up.
 
-    ./setup.sh && docker compose up -d --build
+### Step 5 — Confirm it's live and grab the victim URL
 
-    # Wait ~15 seconds for the tunnel to come up, then get the victim URL:
-    docker logs ttx-lab | grep "Send victims"
+    docker logs ttx-lab | tail -20
 
-    # Watch the attack chain:
-    docker logs -f ttx-lab
+You want to see this banner (the URL is new every launch):
 
-The startup banner shows the active tool:
+    ==================================================
+      TTX CLICKFIX LAB IS LIVE
+      Active RMM:        rustdesk (RustDesk Host, silent)
+      Send victims to:   https://<random>.trycloudflare.com/ttx/
+      Watch beacons:     docker logs -f ttx-lab
+      ...
+    ==================================================
 
-    TTX CLICKFIX LAB IS LIVE
-    Active RMM:        rustdesk (RustDesk Host, silent)
-    Send victims to:   https://<tunnel>.trycloudflare.com/ttx/
+Troubleshooting at this stage:
+
+- `ERROR: no tunnel URL` — wait 30 s and run the log command again; if it
+  persists, check outbound internet from the host.
+- `ERROR: unknown RMM_TOOL` — `.env` has a tool id with no matching module;
+  re-run `./setup.sh` and pick from the list.
+
+### Step 6 — Sanity-check that the payload is being served
+
+Before handing the URL to a victim, confirm the container can actually
+serve the selected tool's payload over the tunnel:
+
+    URL=$(docker logs ttx-lab | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1)
+    curl -I $URL/ttx/rmm/rustdesk/rustdesk-host.exe
+    # (splashtop instead: curl -I $URL/ttx/rmm/splashtop/streamer.msi)
+
+Expected: `HTTP/2 200` with a sane `Content-Length` (~25M for RustDesk,
+~68M for Splashtop). A `404` means the payload isn't in
+`ttx/rmm/<tool>/` on the host — recheck Step 2. Each victim download also
+shows up as a `200` line in the docker logs.
+
+### Step 7 — Run the exercise
+
+- Hand the `https://<tunnel>.trycloudflare.com/ttx/` URL to your victims
+  (they should paste the copied command into an elevated PowerShell)
+- Follow along live:
+
+      docker logs -f ttx-lab
+
+- The facilitator console is on the lure page itself — press `F`
+  (copy stats, event log, editable payload)
+- When the `rmm-start-<tool>` → `<tool>-installed` beacons arrive, the
+  machine is in your RMM console — connect and take over
+
+### Day-to-day command cheat sheet
+
+    ./setup.sh                                     # re-pick the RMM tool (menu)
+    docker compose up -d --build                   # launch / apply tool change
+    docker compose restart                          # re-run after swapping a payload file
+    docker compose down && docker compose up -d --build   # new session URL
+    docker logs -f ttx-lab                          # watch beacons live
+    docker logs ttx-lab | tail -20                 # banner + victim URL
 
 ## Switching tools mid-course
 
 Re-run the picker, then recreate the container (the tool choice is
-container config, so a plain `restart` won't pick it up):
+container config, so a plain `restart` won't pick it up — that's why the
+cheat sheet distinguishes `restart` from `down/up`):
 
     ./setup.sh
     docker compose down && docker compose up -d --build
-
-## Verify the payload is being served
-
-Before handing the URL to a victim, confirm the container serves the
-active tool's payload (adjust the path to the tool you picked):
-
-    URL=$(docker logs ttx-lab | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1)
-
-    curl -I $URL/ttx/rmm/splashtop/streamer.msi     # or .../rustdesk/rustdesk-host.exe
-
-Expected: `HTTP/2 200` with a sane `Content-Length`. A `404` means the
-payload isn't in `ttx/rmm/<tool>/` on the host — recheck Step 2. A `200`
-in the docker logs confirms each victim download.
 
 ## Partial testing (no payload, no victim needed)
 
