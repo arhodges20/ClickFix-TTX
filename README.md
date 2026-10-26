@@ -1,3 +1,12 @@
+## Authorized use / disclaimer
+
+This project is a training aid for cybersecurity education and tabletop
+exercises. Run it only against systems you own or are explicitly
+authorized to test, and hand the lure URL only to consenting
+participants. You are responsible for complying with the policies of any
+environment you run it in and with applicable law. The authors accept no
+liability for misuse.
+
 # TTX Lab — ClickFix → Modular RMM Deployment
 
 One-command ClickFix training scenario. Victim pastes a command from a
