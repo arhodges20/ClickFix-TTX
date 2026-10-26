@@ -1,0 +1,6 @@
+# ttx/rmm/rustdesk/manifest - read by setup.sh and select-rmm.sh
+TOOL_ID=rustdesk
+DISPLAY_NAME="RustDesk Host (silent)"
+PAYLOAD_FILE=rustdesk-host.exe
+CHECK_PROCESS=rustdesk
+README="Download the Windows host exe from github.com/rustdesk/rustdesk/releases and save it as ttx/rmm/rustdesk/rustdesk-host.exe"
