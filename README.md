@@ -1,12 +1,3 @@
-## Authorized use / disclaimer
-
-This project is a training aid for cybersecurity education and tabletop
-exercises. Run it only against systems you own or are explicitly
-authorized to test, and hand the lure URL only to consenting
-participants. You are responsible for complying with the policies of any
-environment you run it in and with applicable law. The authors accept no
-liability for misuse.
-
 # TTX Lab — ClickFix → Modular RMM Deployment
 
 One-command ClickFix training scenario. Victim pastes a command from a
@@ -17,7 +8,8 @@ machine joins your RMM console.
 Which RMM tool victims get is chosen interactively at setup time
 (`./setup.sh`) from whatever tool modules exist in `ttx/rmm/`.
 Ships with **Splashtop Streamer** (visible install wizard) and
-**RustDesk** (silent install); see "Adding a new RMM tool" below.
+**RustDesk** (silent install); see **EXTENDING.md** for a full
+fork-and-customize guide (adding tools, changing the lure, conventions).
 
 ## Requirements
 - Docker host (any Linux box, no inbound ports needed — tunnel is outbound-only)
@@ -254,18 +246,20 @@ by `select-rmm.sh` at container start, downloads that tool's
 pipeline (lure page, stage1.ps1, set-url.sh) knows anything about a
 specific tool.
 
-### Adding a new RMM tool
+### Adding a new RMM tool (short version)
 
 1. `mkdir ttx/rmm/<newtool>`
 2. Write `ttx/rmm/<newtool>/manifest` (copy an existing one and edit)
 3. Write `ttx/rmm/<newtool>/install.ps1` — copy an existing one as a
    template; keep the `$Base`-relative download URL, the `Beacon()` calls
    (prefix your beacon names with the tool id), and a process-name check
-4. Place the tool's payload binary and note where to get it in the
+4. Add `cleanup-scripts/tools/<newtool>.ps1` so victims can be reset
+5. Place the tool's payload binary and note where to get it in the
    manifest's README line
 
 That's it — the menu, container validation, URL rewriting, and bind-mount
-all pick it up automatically. No core-script edits.
+all pick it up automatically. No core-script edits. Full walkthrough with
+field-by-field notes and testing steps: **EXTENDING.md**.
 
 ## Victim cleanup (reset a machine for a re-run)
 
@@ -288,3 +282,14 @@ It is idempotent and prints `[cleaned]` / `[absent ]` per item. See
 - Reused victims: run `cleanup-scripts/cleanup-victim.ps1` first (kills the
   persistence task, uninstalls the RMM agent, clears Public files) — proven
   to produce a working re-run.
+
+## Authorized use only
+
+This project is a **training aid for cybersecurity education and tabletop
+exercises** — a simulated ClickFix scenario for teaching and demonstration.
+Run it only against systems you own or are explicitly authorized to test,
+and hand the lure URL only to consenting participants. If you fork or
+adapt it, you are responsible for complying with the policies of any
+environment you run it in and with applicable law. The authors accept no
+liability for misuse. See **EXTENDING.md** for guidance on making the lab
+your own.
