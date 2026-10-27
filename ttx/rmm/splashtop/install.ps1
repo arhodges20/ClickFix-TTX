@@ -42,7 +42,7 @@ Get-Process msiexec -ErrorAction SilentlyContinue |
 # LAUNCH THE WIZARD - visible, in the user's interactive session.
 # dcode pre-fills the deployment binding; the user still clicks through.
 Beacon 'splashtop-wizard-launch'
-Start-Process msiexec.exe -ArgumentList '/i', "`"$File`"", 'dcode=ZT4WXRHKL5TY'
+Start-Process msiexec.exe -ArgumentList '/i', "`"$File`"", 'dcode=CHANGE THIS TO YOUR INTENDED DEPLOYMENT CODE'
 Add-Content $Log "$(Get-Date -f s)  launched $Desc - wizard visible, awaiting user"
 
 # Poll for streamer up (user-paced; MSI UI waits for clicks)
