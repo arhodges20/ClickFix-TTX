@@ -1,0 +1,6 @@
+# ttx/rmm/splashtop/manifest - read by setup.sh and select-rmm.sh
+TOOL_ID=splashtop
+DISPLAY_NAME="Splashtop Streamer (MSI wizard)"
+PAYLOAD_FILE=streamer.msi
+CHECK_PROCESS=SRStream
+README="Get the Streamer MSI from my.splashtop.com (deploy by 12-digit code -> Streamer MSI download), extract the zip, and save it as ttx/rmm/splashtop/streamer.msi"

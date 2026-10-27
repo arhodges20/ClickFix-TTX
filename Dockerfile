@@ -11,7 +11,7 @@ RUN unlink /etc/nginx/sites-enabled/default
 COPY nginx.conf /etc/nginx/nginx.conf
 
 COPY ttx /var/www/html/ttx
-RUN chmod +x /var/www/html/ttx/set-url.sh
+RUN chmod +x /var/www/html/ttx/set-url.sh /var/www/html/ttx/select-rmm.sh
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

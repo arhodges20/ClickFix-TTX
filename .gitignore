@@ -1,2 +1,10 @@
-ttx/rmm/streamer.msi
+# operator-local choice made by ./setup.sh (never committed)
+.env
+
+# RMM payload binaries are team/deployment-bound - operators place them
+ttx/rmm/*/*.msi
+ttx/rmm/*/*.exe
+
+# session state
 ttx/.current-url
+ttx/.active-rmm

