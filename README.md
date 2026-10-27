@@ -1,4 +1,5 @@
 # TTX Lab — ClickFix → Modular RMM Deployment
+<img width="1254" height="1254" alt="image" src="https://github.com/user-attachments/assets/206f4512-f775-4e4d-bb35-044194a32997" />
 
 One-command ClickFix training scenario. Victim pastes a command from a
 fake CAPTCHA page → stage1 drops rmm.ps1 with logon persistence → the
