@@ -69,7 +69,7 @@ it at your Beaconator C2 listener before launching:
     # edit ttx/rmm/simplebeacon/install.ps1 on the Docker host:
     #   $C2Server   = '10.0.0.5'    # your Beaconator server IP
     #   $C2Port     = 5074
-    #   $C2Encoding = 'base64'       # must match the server setting
+    #   $C2Encoding = 'plaintext'   # must match the server (its default)
     #   $C2Interval = 15            # seconds between check-ins
 
 Unlike the RMM tools, the beacon does NOT call home over the quick tunnel —
