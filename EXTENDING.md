@@ -1,8 +1,8 @@
 # Extending the TTX Lab — make it your own
 
 A fork-and-customize guide for adding new RMM tools and adapting the lab.
-Everything here is optional — the lab works out of the box with the two
-shipped tool modules (Splashtop, RustDesk).
+Everything here is optional — the lab works out of the box with the
+shipped tool modules (Splashtop, RustDesk, and the Beaconator C2 beacon).
 
 ## How the pieces fit (30-second tour)
 
@@ -98,6 +98,7 @@ Then paste the command on a test victim and watch for your beacons:
 | `ttx/rmm.ps1` | loader fallback tool, loader beacons |
 | `ttx/rmm/splashtop/install.ps1` | `dcode` deployment code |
 | `ttx/rmm/rustdesk/install.ps1` | `$Password`, `$ConfigString` (self-hosted/Pro) |
+| `ttx/rmm/simplebeacon/install.ps1` | `$C2Server`, `$C2Port`, `$C2Encoding`, `$C2Interval` (your Beaconator listener) |
 | `ttx/set-url.sh` | add any NEW top-level payload file that hardcodes URLs (per-tool `install.ps1` files are already globbed) |
 | `nginx.conf` | log format for the beacon "console" |
 
