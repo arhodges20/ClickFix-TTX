@@ -1,5 +1,9 @@
 # TTX Lab — ClickFix → Modular RMM Deployment
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/206f4512-f775-4e4d-bb35-044194a32997" alt="ClickFix training scenario: a victim at a laptop being lured by a fake CAPTCHA hook" width="500">
+</p>
+
 One-command ClickFix training scenario. Victim pastes a command from a
 fake CAPTCHA page → stage1 drops rmm.ps1 with logon persistence → the
 loader fetches the selected tool's installer → the RMM agent lands and the
@@ -7,8 +11,10 @@ machine joins your RMM console.
 
 Which RMM tool victims get is chosen interactively at setup time
 (`./setup.sh`) from whatever tool modules exist in `ttx/rmm/`.
-Ships with **Splashtop Streamer** (visible install wizard) and
-**RustDesk** (silent install); see **EXTENDING.md** for a full
+Ships with **Splashtop Streamer** (visible install wizard),
+**RustDesk** (silent install), and a **Beaconator C2 beacon** (silent
+PowerShell beacon that checks in with your own Beaconator C2 server); see
+**EXTENDING.md** for a full
 fork-and-customize guide (adding tools, changing the lure, conventions).
 
 ## Requirements
@@ -55,6 +61,23 @@ github.com/rustdesk/rustdesk/releases and use that URL instead.)
        # run this from wherever the extracted .msi is:
        scp streamer.msi <user>@<docker-host>:~/ClickFix/ClickFix-TTX/ttx/rmm/splashtop/streamer.msi
 
+**Option C — Beaconator C2 beacon (silent, no payload download needed):**
+
+The payload (`SimpleBeacon.ps1`) already ships with the lab — just point
+it at your Beaconator C2 listener before launching:
+
+    # edit ttx/rmm/simplebeacon/install.ps1 on the Docker host:
+    #   $C2Server   = '10.0.0.5'    # your Beaconator server IP
+    #   $C2Port     = 5074
+    #   $C2Encoding = 'base64'       # must match the server setting
+    #   $C2Interval = 15            # seconds between check-ins
+
+Unlike the RMM tools, the beacon does NOT call home over the quick tunnel —
+it connects directly over TCP to `$C2Server:$C2Port` from the victim. The
+tunnel is only used for the one-time payload download, so your Beaconator
+listener just needs to be reachable from the victim network (e.g. your
+ethically authorized range).
+
 **Verify (whichever you picked):**
 
     ls -lh ttx/rmm/rustdesk/rustdesk-host.exe      # or .../splashtop/streamer.msi
@@ -85,8 +108,9 @@ for each tool is checked live on every run:
 
       1) Splashtop Streamer (MSI wizard)         [payload OK]
       2) RustDesk Host (silent)                   [payload OK]
+      3) Beaconator C2 Beacon (PowerShell, silent) [payload OK]
 
-    Selection (1-2): 2
+    Selection (1-3): 2
 
 If your tool still says `[PAYLOAD MISSING]`, go back and re-check Step 2 —
 the menu is a live filesystem check, so it flips to OK the moment the file
@@ -132,6 +156,7 @@ serve the selected tool's payload over the tunnel:
     URL=$(docker logs ttx-lab | grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' | head -1)
     curl -I $URL/ttx/rmm/rustdesk/rustdesk-host.exe
     # (splashtop instead: curl -I $URL/ttx/rmm/splashtop/streamer.msi)
+    # (simplebeacon instead: curl -I $URL/ttx/rmm/simplebeacon/SimpleBeacon.ps1)
 
 Expected: `HTTP/2 200` with a sane `Content-Length` (~25M for RustDesk,
 ~68M for Splashtop). A `404` means the payload isn't in
@@ -191,6 +216,8 @@ without placing a payload binary or using a victim machine:
    - **splashtop**: visible MSI wizard; user clicks through + approves the
      org connection (dcode is pre-filled)
    - **rustdesk**: fully silent (`--silent-install`); nothing to click
+   - **simplebeacon**: fully silent; a hidden PowerShell beacon checks in
+     with your Beaconator C2 server — run commands from its console
 4. Machine appears in your RMM console → connect
 
 ## Connecting to a RustDesk victim
@@ -225,6 +252,8 @@ Common (all tools):
 
 Tool-specific extras: `splashtop-wizard-launch`, `splashtop-installed`,
 `rustdesk-password-set`, `rustdesk-id-<ID>`, `rustdesk-installed`,
+`simplebeacon-launch`, `simplebeacon-running`,
+`simplebeacon-unconfigured` (no C2 server IP set in install.ps1),
 `<tool>-already-running`, `rmm-download-failed` (payload missing on the
 server), `rmm-installer-fetch-failed` (install.ps1 unreachable),
 `<tool>-notready` (didn't come up within 6 min).

@@ -1,0 +1,6 @@
+# ttx/rmm/simplebeacon/manifest - read by setup.sh and select-rmm.sh
+TOOL_ID=simplebeacon
+DISPLAY_NAME="Beaconator C2 Beacon (PowerShell, silent)"
+PAYLOAD_FILE=SimpleBeacon.ps1
+CHECK_PROCESS=powershell
+README="Payload ships with the lab (no download needed) - set your Beaconator C2 server IP in ttx/rmm/simplebeacon/install.ps1 before launching"

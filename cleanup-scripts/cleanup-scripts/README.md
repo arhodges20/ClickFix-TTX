@@ -10,6 +10,7 @@ re-run on it. Removes **everything** the attack chain drops:
 | `%PUBLIC%\rmm-*.ps1` | installer scripts the loader cached | always |
 | Splashtop Streamer (MSI) + `SRStream` + `%PUBLIC%\streamer.msi` / `setup.msi` | `ttx/rmm/splashtop/install.ps1` | `tools/splashtop.ps1` |
 | RustDesk host + service + all data folders + `%PUBLIC%\rustdesk-host.exe` | `ttx/rmm/rustdesk/install.ps1` | `tools/rustdesk.ps1` |
+| Beaconator beacon process + `%PUBLIC%\SimpleBeacon.ps1` | `ttx/rmm/simplebeacon/install.ps1` | `tools/simplebeacon.ps1` |
 
 ## Usage
 
