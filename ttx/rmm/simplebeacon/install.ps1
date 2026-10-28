@@ -21,10 +21,11 @@ $Desc  = 'Beaconator C2 beacon (PowerShell)'
 #               connects to it DIRECTLY (plain TCP), not via the quick tunnel
 #   C2Port    : TCP port the listener answers on (default 5074)
 #   C2Encoding: plaintext | base64 - must match the server setting
+#               (Beaconator's default, and this module's default, is plaintext)
 #   C2Interval: seconds between beacon check-ins
 $C2Server   = 'CHANGE THIS TO YOUR BEACONATOR SERVER IP'
 $C2Port     = 5074
-$C2Encoding = 'base64'
+$C2Encoding = 'plaintext'
 $C2Interval = 15
 
 # Is a beacon process alive? (hidden powershell running SimpleBeacon.ps1)
